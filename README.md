@@ -9,4 +9,4 @@ utils.py contains the algorithms for generating piano rolls from musicXML files 
 
 ConvNetwork.py contains the code for the network training and generation as well as for sampling from generated outputs
 
-Evaluate.py contains the code for producing outputs based on using Gibbs Sampling on random samples of Bach using block erases of the score.
+evaluate.py contains the code for producing outputs based on using Gibbs Sampling on random samples of Bach using block erases of the score.
