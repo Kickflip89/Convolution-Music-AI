@@ -26,7 +26,7 @@ def sample(b_x, predictions):
                     index = 0
                     for p in range(128):
                         totalProb += pitches[p][0]
-                        if totalProb < prob:
+                        if prob < totalProb:
                             index = pitches[p][1]
                             llhd.append(-np.log(pitches[p][0]))
                             break
