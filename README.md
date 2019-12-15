@@ -1,5 +1,5 @@
 # Convolution-Music-AI
-Using Convolutional Neural Network to Generate AI
+Using Convolutional Neural Network to Generate Mysic:
 
 Generated music samples are in the Music folder.
 
