@@ -13,25 +13,24 @@ class ScoreAnalyzer:
         self.s = corpus.parse(fname)
         self.getPianoRoll()
 
-    #Turns a musicXML file into a piano roll
     def getPianoRoll(self):
         parts = list()
         badData = False
         for part in self.s.getElementsByClass(stream.Part):
             if(badData):
                 return
-            roll = np.zeros(((16*len(part.getElementsByClass(stream.Measure))),128))
+            roll = np.zeros(((8*len(part.getElementsByClass(stream.Measure))),128))
             measureNum = 0
             for measure in part.getElementsByClass(stream.Measure):
                 if(badData):
                     return
                 for note in measure.notes:
-                    onset = int(4*note.offset)
+                    onset = int(2*note.offset)
                     pitch = int(note.pitch.ps)
-                    duration = int(note.duration.quarterLength*4)
+                    duration = int(note.duration.quarterLength*2)
                     for i in range(duration):
                         try:
-                            roll[(16*measureNum)+i+onset][pitch] = 1
+                            roll[(8*measureNum)+i+onset][pitch] = 1
                         except:
                             print("Error with measure", measureNum, "in", self.fname)
                             self.badData = True
@@ -98,20 +97,20 @@ def buildScore(r):
                 currOnset = 0
             if currPitch != currNote:
                 n = note.Note(currNote)
-                n.quarterLength = currDuration / 4
+                n.quarterLength = currDuration / 2
                 n.onset = currOnset
                 print(n.pitch, n.quarterLength, n.onset)
                 m.append(n)
                 lastPitch = currNote
                 currNote = currPitch
                 currDuration = 1
-                currOnset = (time%16) / 4
+                currOnset = (time%8) / 2
             else:
                 currDuration += 1
-            if time > 0 and (time) % 16 == 0:
+            if time > 0 and (time) % 8 == 0:
                 if(currDuration > 1):
                     n = note.Note(currNote)
-                    n.quarterLength = (currDuration-1)/4
+                    n.quarterLength = (currDuration-1)/2
                     n.onset = currOnset
                     print(n.pitch, n.quarterLength, n.onset)
                     currOnset = 0
@@ -121,7 +120,7 @@ def buildScore(r):
                 p1.append(m)
                 m = stream.Measure()
         n = note.Note(currNote)
-        n.quarterLength = currDuration / 4
+        n.quarterLength = currDuration / 2
         n.onset = currOnset
         m.append(n)
         p1.append(m)

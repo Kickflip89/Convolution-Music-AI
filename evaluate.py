@@ -3,6 +3,9 @@ import ConvNetwork as cn
 import numpy as np
 import matplotlib.pyplot as plt
 import random
+import sys
+import os
+from keras.models import model_from_json
 
 def sortOnProb(val):
     return val[0]
@@ -36,8 +39,8 @@ def sample(b_x, predictions):
     return (sampled,dat)
 
 #Executes Gibbs Sampling on a batch of input data.
-def Gibbs(batch_x, a_min, a_max, nu, N):
-    output = network.m.predict(batch_x)
+def Gibbs(batch_x, a_min, a_max, nu, N, model):
+    output = model.predict(batch_x)
     (preds, nll) = sample(batch_x, output)
     nlls = [nll]
     orig_mask = batch_x[0][4:8].copy()
@@ -62,24 +65,25 @@ def Gibbs(batch_x, a_min, a_max, nu, N):
             newinst = np.concatenate((data, masks.copy()))
             dats.append(newinst)
         newData = np.array(dats)
-        output = network.m.predict(newData)
+        output = model.predict(newData)
         (preds, nll) = sample(newData, output)
         nlls.append(nll)
         print(np.count_nonzero(masks[:,:,0]), np.count_nonzero(newData[:,0:4,:,:]), np.count_nonzero(preds))
     return (preds, nlls)
 
+#
 def getValidationSet(val):
-    batchData = random.sample(flist, 20)
+    batchData = random.sample(val, 20)
     allMasks=list()
     batch_x = list()
     batch_y = list()
     masks = list()
     erased = 0
-    #masks.append(np.ones((64,128)))
-    for j in range(4):
-        mask = np.ones((64,128))
-        timeSteps = np.random.randint(8,16)
-        end = np.random.randint(40,52)
+    masks.append(np.ones((32,128)))
+    for j in range(1,4):
+        mask = np.ones((32,128))
+        timeSteps = np.random.randint(2,8)
+        end = np.random.randint(28,30)
         erased += end - timeSteps
         for time in range(timeSteps, end):
             mask[time] = np.zeros(128)
@@ -88,9 +92,9 @@ def getValidationSet(val):
     for fname in batchData:
         SA = ScoreAnalyzer(fname)
         roll = SA.transpose()
-        measures = roll.shape[1]//16
+        measures = roll.shape[1]//8
         endMeasure=np.random.randint(4,(measures+1))
-        yDat = roll[:,(16*endMeasure - 64):endMeasure*16,:]
+        yDat = roll[:,(8*endMeasure - 32):endMeasure*8,:]
         ipt = yDat.copy()
         ipt = ipt * masks
         batch_y.append(yDat)
@@ -116,7 +120,17 @@ def plotNLL(nlls):
     plt.legend()
     plt.show()
 
-def Main():
+
+cmd = sys.argv[1:]
+train = True
+if(len(cmd) > 0):
+    if (cmd[0].tolower() == "-load"):
+        train = False
+        loadpath = os.path.dirname(cmd[1])
+    else:
+        print(cmd[0] + " is an unsupported argument")
+
+if(train):
     flist = makeDataList()
     random.shuffle(flist)
     val = flist[0:4].copy()
@@ -125,14 +139,34 @@ def Main():
     network = cn.ConvNetwork()
     histories = network.TrainModel(trn)
 
-    batch_x = getValidationSet(val)
-    (preds, data) = Gibbs(batch_x, .03,.9,.85,(64*4))
+    batch_x = getValidationSet(flist)
+    (preds, data) = Gibbs(batch_x, .03,.9,.85,(32*4), network.m)
 
     #plot NLL through GIbbs process:
     #nums = list(zip(*data))[0]
     #plotNLL(nums)
 
-    #sample from scores
-    #r = preds[random.randint(0,20)]
-    #s = buildScore(r)
-    #s.write('midi', 'sample.midi')
+    #save model:
+    modelPath = os.path.dirname("model/model.json")
+    model_json = network.m.to_json()
+    modelPath = os.path.dirname("model/model.json")
+    modelFile = os.path.join(modelPath, "model.json")
+    weights = os.path.join(modelPath, "model.h5")
+    with open(modelFile, "w") as json_file:
+        json_file.write(model_json)
+    # serialize weights to HDF5
+    network.m.save_weights(weights)
+
+else:
+    modelFile = os.path.join(loadpath,"model.json")
+    weights = os.path.join(loadpath,"model.h5")
+    json_file = open(modelFile, 'r')
+    loaded_model_json = json_file.read()
+    json_file.close()
+    model = model_from_json(loaded_model_json)
+    model.load_weights(weights)
+    (preds, data) = Gibbs(batch_x, .03, .9, .85, (32*4), model)
+#sample from scores
+r = preds[random.randint(0,20)]
+s = buildScore(r)
+s.write('midi', 'sample.midi')
