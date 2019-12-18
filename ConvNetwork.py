@@ -12,13 +12,13 @@ def makeDataList():
     chorales = list(range(250,439))
     files = list()
     for num in chorales:
-        file = "bach/bwv" + str(num) + ".xml"
-        SA = ScoreAnalyzer(file)
+        f = "bach/bwv" + str(num) + ".xml"
+        SA = ScoreAnalyzer(f)
         if SA.notFourFour():
             continue
         if SA.badData:
             continue
-        files.append(file)
+        files.append(f)
     return files
 
 
