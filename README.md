@@ -11,4 +11,4 @@ ConvNetwork.py contains the code for the network (loss functions etc.)
 
 evaluate.py contains the code for training the network and for producing outputs based on using Gibbs Sampling on random samples of Bach using block erases of the score:  To train, run evaluate.py.
 
-To load a model, use evaluate.py -train path-to-model-directory (save files as model.json and model.h6).
+To load a model, $python3 evaluate.py -load path-to-model-directory (save files as model.json and model.h5).
