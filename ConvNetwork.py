@@ -8,7 +8,7 @@
 import numpy as np
 import random
 from keras.models import Model
-from keras.layers import Input, Conv2D, BatchNormalization, add
+from keras.layers import Input, Conv2D, BatchNormalization, add, Activation
 from keras.optimizers import Adam
 import tensorflow as tf
 from utils import ScoreAnalyzer
@@ -83,15 +83,19 @@ class ConvNetwork:
 
     def buildModel(self):
         data = Input(shape=(8,32,128))
-        preconv = Conv2D(64, 3, padding='same', activation='relu', data_format="channels_first")(data)
+        preconv = Conv2D(64, 3, padding='same', data_format="channels_first")(data)
         lastInput = BatchNormalization(axis=1)(preconv)
+        lastInput = Activation('relu')(lastInput)
         for i in range(self.nconvs//2):
-            conv1 = Conv2D(64, 5, padding='same', activation='relu', data_format="channels_first")(lastInput)
+            conv1 = Conv2D(64, 5, padding='same', data_format="channels_first")(lastInput)
             bn1 = BatchNormalization(axis=1)(conv1)
-            conv2 = Conv2D(64, 5, padding='same', activation='relu', data_format="channels_first")(bn1)
+            act1 = Activation('relu')(bn1)
+            conv2 = Conv2D(64, 5, padding='same', data_format="channels_first")(bn1)
             bn2 = BatchNormalization(axis=1)(conv2)
-            lastInput = add([lastInput,bn2])
+            act2 = Activation('relu')(bn2)
+            lastInput = add([lastInput,act2])
             lastInput = BatchNormalization(axis=1)(lastInput)
+            lastInput = Activation('relu')(lastInput)
         output = Conv2D(4, 3, padding='same', activation='softmax', data_format="channels_first")(lastInput)
         model = Model(inputs=data, outputs=output)
         model.compile(optimizer="Adam", loss=self.lossFunction)
