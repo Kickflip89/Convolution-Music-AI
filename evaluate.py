@@ -78,7 +78,8 @@ def Gibbs(batch_x, a_min, a_max, nu, N, model):
         print(np.count_nonzero(masks[:,:,0]), np.count_nonzero(newData[:,0:4,:,:]), np.count_nonzero(preds))
     return (preds, nlls)
 
-#
+#creates a batch of size 20 from a list of validation filenames
+#for the music21 Corpus
 def getValidationSet(val):
     batchData = random.sample(val, 20)
     allMasks=list()
@@ -127,7 +128,7 @@ def plotNLL(nlls):
     plt.legend()
     plt.show()
 
-
+#MAIN PROGRAM STARTS HERE
 cmd = sys.argv[1:]
 train = True
 if(len(cmd) > 0):
@@ -137,6 +138,7 @@ if(len(cmd) > 0):
     else:
         print(cmd[0] + " is an unsupported argument")
 
+#Trains a new model (takes around 8 hours)
 if(train):
     flist = makeDataList()
     random.shuffle(flist)
@@ -164,6 +166,8 @@ if(train):
     # serialize weights to HDF5
     network.m.save_weights(weights)
 
+#loads a model from the command line path to "model.json"
+#and "model.h5"
 else:
     modelFile = os.path.join(loadpath,"model.json")
     weights = os.path.join(loadpath,"model.h5")
@@ -173,7 +177,7 @@ else:
     model = model_from_json(loaded_model_json)
     model.load_weights(weights)
     (preds, data) = Gibbs(batch_x, .03, .9, .85, (32*4), model)
-#sample from scores
+#sample from scores -- modify as desired to obtain multiple samples.
 r = preds[random.randint(0,20)]
 s = buildScore(r)
 s.write('midi', 'sample.midi')
