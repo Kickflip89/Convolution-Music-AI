@@ -13,12 +13,14 @@ from keras.optimizers import Adam
 import tensorflow as tf
 from utils import ScoreAnalyzer
 
+#Hyperparameters for Adam Optimizer (if used)
 DEF_LR = .01
 DEF_LR_DEC = .01
 
 #Model architecture and batch generation / loss methods
 class ConvNetwork:
 
+    #Constructor
     def __init__(self, batches=20, num_convs=20, alpha = DEF_LR, alpha_dec = DEF_LR_DEC):
         self.batchSize = batches
         self.nconvs = num_convs
@@ -29,11 +31,14 @@ class ConvNetwork:
         self.num_erased = 0
         self.m = self.buildModel()
 
+    #Trains a model from the list of filenames in the music21 Corpus (dataList)
     def TrainModel(self, dataList):
         dlen = len(dataList)*4*7
         histories = self.m.fit_generator(self.batchGenerator(dataList), dlen/self.batchSize, 8)
         return histories
 
+    #Generates random batches of size self.batchSize in random keys
+    #and random 4-bar increments.  The erased notes are shared accross the batch
     def batchGenerator(self, dataList):
         while True:
             batchData = random.sample(dataList, self.batchSize)
@@ -44,6 +49,8 @@ class ConvNetwork:
             masks = list()
             for j in range(4):
                 mask = np.ones((32,128))
+                
+                #erases between 10 and 20 notes for each voice
                 timeSteps = np.random.randint(10,20)
                 self.num_erased += timeSteps
                 timeSteps = np.random.choice(a=list(range(32)), size=timeSteps, replace=False)
@@ -51,6 +58,8 @@ class ConvNetwork:
                     mask[time] = np.zeros(128)
                 masks.append(mask)
             masks = np.array(masks)
+            
+            #creates piano rolls for the selected file names
             for fname in batchData:
                 SA = ScoreAnalyzer(fname)
                 roll = SA.transpose()
@@ -68,7 +77,8 @@ class ConvNetwork:
             self.masks = np.array(self.masks)
             print(batch_x.shape, self.masks.shape, np.count_nonzero(batch_y), np.count_nonzero(self.masks))
             yield(batch_x,batch_y)
-
+            
+    #Custom lossFunction (see writeup)
     def lossFunction(self, y_true, y_pred):
         masks = self.masks
         masks = 1. - masks
@@ -81,6 +91,7 @@ class ConvNetwork:
         print(self.num_erased)
         return -(tf.reduce_sum(res)/num)
 
+    #Model architecture
     def buildModel(self):
         data = Input(shape=(8,32,128))
         preconv = Conv2D(64, 3, padding='same', data_format="channels_first")(data)
